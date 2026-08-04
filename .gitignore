@@ -20,3 +20,8 @@ local.properties
 /.kotlin/
 /build/
 /app/build/
+
+.idea/appInsightsSettings.xml
+.idea/deploymentTargetSelector.xml
+.idea/deviceManager.xml
+.idea/planningMode.xml
