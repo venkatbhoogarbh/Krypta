@@ -17,6 +17,7 @@ import com.venkatbhoogarbh.krypta.R
 import com.venkatbhoogarbh.krypta.ui.adapter.PasswordAdapter
 import com.venkatbhoogarbh.krypta.ui.viewmodel.PasswordViewModel
 import com.venkatbhoogarbh.krypta.util.ClipboardHelper
+import com.venkatbhoogarbh.krypta.util.SessionManager
 import com.venkatbhoogarbh.krypta.util.showDeleteConfirmation
 
 class PasswordVaultFragment : Fragment() {
@@ -42,6 +43,11 @@ class PasswordVaultFragment : Fragment() {
         val fab = view.findViewById<ExtendedFloatingActionButton>(R.id.add_password_fab)
         fab.setOnClickListener {
             findNavController().navigate(R.id.action_vault_to_add)
+        }
+
+        val lockButton = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.manual_lock_button)
+        lockButton.setOnClickListener {
+            SessionManager.lock()
         }
 
         viewModel.allPasswords.observe(viewLifecycleOwner) { entries ->

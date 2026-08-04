@@ -6,6 +6,30 @@
     app:startDestination="@id/passwordVaultFragment">
 
     <fragment
+        android:id="@+id/setupFragment"
+        android:name="com.venkatbhoogarbh.krypta.ui.fragments.SetupFragment"
+        android:label="Setup Krypta"
+        tools:layout="@layout/fragment_setup_master">
+        <action
+            android:id="@+id/action_setup_to_vault"
+            app:destination="@id/passwordVaultFragment"
+            app:popUpTo="@id/setupFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.venkatbhoogarbh.krypta.ui.fragments.LoginFragment"
+        android:label="Unlock Krypta"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_login_to_vault"
+            app:destination="@id/passwordVaultFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
         android:id="@+id/passwordVaultFragment"
         android:name="com.venkatbhoogarbh.krypta.ui.fragments.PasswordVaultFragment"
         android:label="Passwords"
