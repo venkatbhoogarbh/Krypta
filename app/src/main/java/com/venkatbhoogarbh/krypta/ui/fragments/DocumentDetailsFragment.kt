@@ -16,8 +16,13 @@ import com.venkatbhoogarbh.krypta.R
 import com.venkatbhoogarbh.krypta.data.model.DocumentEntry
 import com.venkatbhoogarbh.krypta.ui.viewmodel.DocumentViewModel
 import com.venkatbhoogarbh.krypta.util.ClipboardHelper
+import com.venkatbhoogarbh.krypta.util.SecurityUtils
+import com.venkatbhoogarbh.krypta.util.SessionManager
 import com.venkatbhoogarbh.krypta.util.StorageManager
 import com.venkatbhoogarbh.krypta.util.showDocumentDeleteConfirmation
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -100,17 +105,27 @@ class DocumentDetailsFragment : Fragment() {
     }
 
     private fun openDocument(entry: DocumentEntry) {
+        val key = SessionManager.vaultKey ?: return
         try {
-            val file = storageManager.getFile(entry.internalIdentifier)
-            if (!file.exists()) {
+            val encryptedFile = storageManager.getFile(entry.internalIdentifier)
+            if (!encryptedFile.exists()) {
                 Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show()
                 return
+            }
+
+            // Decrypt to a temporary file in the private cache for secure viewing
+            val tempFile = File(requireContext().cacheDir, entry.originalFileName)
+            
+            SecurityUtils.getDecryptStream(FileInputStream(encryptedFile), key).use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
+                }
             }
 
             val uri = FileProvider.getUriForFile(
                 requireContext(),
                 "${requireContext().packageName}.fileprovider",
-                file
+                tempFile
             )
 
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -121,6 +136,9 @@ class DocumentDetailsFragment : Fragment() {
             val chooser = Intent.createChooser(intent, "Open with")
             if (intent.resolveActivity(requireContext().packageManager) != null) {
                 startActivity(chooser)
+                // Note: ideally we'd delete the temp file after the viewer closes, 
+                // but Android doesn't guarantee a callback. 
+                // A better approach for Phase 6 would be cleaning cache on startup/lock.
             } else {
                 Toast.makeText(context, "No app found to open this file", Toast.LENGTH_LONG).show()
             }

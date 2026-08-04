@@ -44,17 +44,19 @@ class StorageManager(private val context: Context) {
     }
 
     /**
-     * Copies a file from a Uri to internal storage.
+     * Copies a file from a Uri to internal storage with encryption.
      * @return The unique internal identifier (filename) if successful, null otherwise.
      */
     fun saveFile(uri: Uri, metadata: FileMetadata): String? {
+        val key = SessionManager.vaultKey ?: return null
         val internalId = UUID.randomUUID().toString() + if (metadata.extension.isNotEmpty()) ".${metadata.extension}" else ""
         val targetFile = File(documentsDir, internalId)
 
         return try {
-            val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+            val inputStream = context.contentResolver.openInputStream(uri)
             inputStream?.use { input ->
-                FileOutputStream(targetFile).use { output ->
+                val encryptedOutput = SecurityUtils.getEncryptStream(FileOutputStream(targetFile), key)
+                encryptedOutput.use { output ->
                     val buffer = ByteArray(8 * 1024)
                     var bytesRead: Int
                     while (input.read(buffer).also { bytesRead = it } != -1) {
@@ -63,14 +65,8 @@ class StorageManager(private val context: Context) {
                     output.flush()
                 }
             } ?: throw Exception("Failed to open input stream")
-
-            // Verify size matches metadata (basic integrity check)
-            if (targetFile.length() != metadata.size && metadata.size > 0) {
-                targetFile.delete()
-                null
-            } else {
-                internalId
-            }
+            
+            internalId
         } catch (e: Exception) {
             if (targetFile.exists()) targetFile.delete()
             null

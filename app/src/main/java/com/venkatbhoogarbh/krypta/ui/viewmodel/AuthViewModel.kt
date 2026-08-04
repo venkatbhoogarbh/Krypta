@@ -40,8 +40,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            SecurityUtils.setMasterPassword(getApplication(), password.toCharArray())
-            SessionManager.authenticate()
+            val key = SecurityUtils.setMasterPassword(getApplication(), password.toCharArray())
+            SessionManager.authenticate(key)
             _authState.value = AuthState.Success
         }
     }
@@ -54,10 +54,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val isValid = SecurityUtils.verifyMasterPassword(getApplication(), password.toCharArray())
+            val key = SecurityUtils.verifyMasterPassword(getApplication(), password.toCharArray())
             
-            if (isValid) {
-                SessionManager.authenticate()
+            if (key != null) {
+                SessionManager.authenticate(key)
                 _authState.value = AuthState.Success
             } else {
                 SessionManager.reportFailedAttempt()
