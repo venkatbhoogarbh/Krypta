@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Krypta Dark Palette -->
+    <color name="krypta_background">#0B0D0D</color>
+    <color name="krypta_surface_container">#141816</color>
+    <color name="krypta_primary">#005031</color>
+    <color name="krypta_primary_container">#003822</color>
+    <color name="krypta_on_primary_container">#82F2B8</color>
+    <color name="krypta_on_background">#E1E3E1</color>
+    <color name="krypta_outline">#8A938E</color>
+    <color name="splash_background">#141D27</color>
+
+
+    <!-- Strength Colors -->
+    <color name="strength_weak">#FF4B4B</color>
+    <color name="strength_fair">#FF9800</color>
+    <color name="strength_good">#FFEB3B</color>
+    <color name="strength_strong">#4CAF50</color>
+
+    <!-- Standard Colors -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="transparent">#00000000</color>
+
+
+
+    <color name="ic_launcher_background">#1C222B</color>
+</resources>

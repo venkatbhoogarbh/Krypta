@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Your standard background -->
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <!-- Your original PNG logo for default display -->
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <!-- Your SVG vector used ONLY when themed icons are enabled -->
+    <monochrome android:drawable="@drawable/krypta_logo" />
+</adaptive-icon>

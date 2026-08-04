@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Default Background Color -->
+    <background android:drawable="@color/ic_launcher_background" />
+
+    <!-- Default Foreground Logo -->
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+
+    <!-- REQUIRED FOR MATERIAL YOU THEMED ICONS (Android 13+) -->
+    <monochrome android:drawable="@drawable/krypta_logo" />
+</adaptive-icon>

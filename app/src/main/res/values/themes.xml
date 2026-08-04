@@ -1,0 +1,34 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.Krypta" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary Brand Colors -->
+        <item name="colorPrimary">@color/krypta_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/krypta_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/krypta_on_primary_container</item>
+
+        <!-- Background and Surface -->
+        <item name="android:windowBackground">@color/krypta_background</item>
+        <item name="colorSurface">@color/krypta_background</item>
+        <item name="colorOnSurface">@color/krypta_on_background</item>
+        <item name="colorSurfaceContainer">@color/krypta_surface_container</item>
+
+        <!-- Text and Outlines -->
+        <item name="colorOnBackground">@color/krypta_on_background</item>
+        <item name="colorOutline">@color/krypta_outline</item>
+        <item name="colorSurfaceVariant">@color/krypta_surface_container</item>
+        <item name="colorOnSurfaceVariant">@color/krypta_outline</item>
+
+        <!-- Navigation Bar -->
+        <item name="android:navigationBarColor">@color/krypta_background</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+        <item name="bottomNavigationStyle">@style/Widget.Krypta.BottomNavigationView</item>
+    </style>
+
+    <style name="Theme.Krypta" parent="Base.Theme.Krypta" />
+    <style name="Theme.Krypta.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Krypta</item>
+    </style>
+</resources>
