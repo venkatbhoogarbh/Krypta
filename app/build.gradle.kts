@@ -64,4 +64,5 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.androidx.core.splashscreen)
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("com.lambdapioneer.argon2kt:argon2kt:1.6.0")
 }
