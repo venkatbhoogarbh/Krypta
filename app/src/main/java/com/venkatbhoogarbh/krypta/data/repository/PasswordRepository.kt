@@ -13,7 +13,7 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     }
 
     private fun encryptEntry(entry: PasswordEntry): PasswordEntry {
-        val key = SessionManager.vaultKey ?: return entry
+        val key = SessionManager.mdk ?: return entry
         return entry.copy(
             username = SecurityUtils.encrypt(entry.username, key),
             password = SecurityUtils.encrypt(entry.password, key),
@@ -22,7 +22,7 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     }
 
     private fun decryptEntry(entry: PasswordEntry): PasswordEntry {
-        val key = SessionManager.vaultKey ?: return entry
+        val key = SessionManager.mdk ?: return entry
         return try {
             entry.copy(
                 username = SecurityUtils.decrypt(entry.username, key),

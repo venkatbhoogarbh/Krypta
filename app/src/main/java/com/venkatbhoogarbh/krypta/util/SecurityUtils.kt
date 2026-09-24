@@ -1,10 +1,12 @@
 package com.venkatbhoogarbh.krypta.util
 
 import android.content.Context
-import android.os.Build
 import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.lambdapioneer.argon2kt.Argon2Kt
+import com.lambdapioneer.argon2kt.Argon2Mode
+import org.json.JSONObject
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
@@ -25,8 +27,14 @@ object SecurityUtils {
     private const val KEY_VERSION = "algorithm_version"
     private const val KEY_IS_SET = "master_password_set"
 
+    // Argon2id Parameters
+    private const val ARGON2_MEMORY = 65536
+    private const val ARGON2_ITERATIONS = 3
+    private const val ARGON2_PARALLELISM = 1
+    private const val ARGON2_HASH_LENGTH = 32
+
     private const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
-    private const val ALGORITHM_VERSION = 1
+    private const val ALGORITHM_VERSION = 2 // Phase 7.1 target version
     private const val ITERATION_COUNT = 210000
     private const val KEY_LENGTH = 256
     private const val SALT_LENGTH = 32
@@ -35,7 +43,9 @@ object SecurityUtils {
     private const val IV_LENGTH = 12
     private const val GCM_TAG_LENGTH = 128
 
-    private fun getEncryptedPrefs(context: Context) = EncryptedSharedPreferences.create(
+    private val argon2Kt = Argon2Kt()
+
+    fun getEncryptedPrefs(context: Context) = EncryptedSharedPreferences.create(
         context,
         PREFS_FILE,
         MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
@@ -47,33 +57,148 @@ object SecurityUtils {
         return getEncryptedPrefs(context).getBoolean(KEY_IS_SET, false)
     }
 
-    fun setMasterPassword(context: Context, password: CharArray): ByteArray {
-        val salt = generateSalt()
-        val verifier = deriveKey(password, salt)
-        
-        getEncryptedPrefs(context).edit().apply {
-            putString(KEY_VERIFIER, Base64.encodeToString(verifier, Base64.NO_WRAP))
-            putString(KEY_SALT, Base64.encodeToString(salt, Base64.NO_WRAP))
-            putInt(KEY_ITERATIONS, ITERATION_COUNT)
-            putInt(KEY_VERSION, ALGORITHM_VERSION)
-            putBoolean(KEY_IS_SET, true)
-            apply()
+    /**
+     * Authenticated Nested Unwrapping Logic.
+     */
+    fun unwrapDataKeys(envelopeBundle: JSONObject, pdk: ByteArray): Map<String, ByteArray>? {
+        var mdk: ByteArray? = null
+        var ddk: ByteArray? = null
+        var sdk: ByteArray? = null
+        var success = false
+        try {
+            val envelopes = envelopeBundle.getJSONObject("envelopes")
+            
+            mdk = KeyManager.unwrapKey(envelopes.getJSONObject("mdk"), pdk)
+            if (mdk == null) return null
+            
+            ddk = KeyManager.unwrapKey(envelopes.getJSONObject("ddk"), pdk)
+            if (ddk == null) return null
+            
+            sdk = KeyManager.unwrapKey(envelopes.getJSONObject("sdk"), pdk)
+            if (sdk == null) return null
+
+            // Verify MDK
+            val storedVerifier = envelopeBundle.getString("verifier")
+            if (!KeyManager.verifyKey(mdk, storedVerifier)) {
+                return null
+            }
+
+            success = true
+            return mapOf("mdk" to mdk, "ddk" to ddk, "sdk" to sdk)
+        } catch (e: Exception) {
+            return null
+        } finally {
+            if (!success) {
+                mdk?.fill(0)
+                ddk?.fill(0)
+                sdk?.fill(0)
+            }
         }
-        return verifier
     }
 
-    fun verifyMasterPassword(context: Context, password: CharArray): ByteArray? {
-        val prefs = getEncryptedPrefs(context)
-        val storedVerifierBase64 = prefs.getString(KEY_VERIFIER, null) ?: return null
-        val storedSaltBase64 = prefs.getString(KEY_SALT, null) ?: return null
-        val iterations = prefs.getInt(KEY_ITERATIONS, ITERATION_COUNT)
-
-        val storedVerifier = Base64.decode(storedVerifierBase64, Base64.NO_WRAP)
-        val storedSalt = Base64.decode(storedSaltBase64, Base64.NO_WRAP)
-
-        val currentVerifier = deriveKey(password, storedSalt, iterations)
+    /**
+     * Secure Key Storage (Two-Slot System).
+     */
+    fun saveKeyBundle(context: Context, mdk: ByteArray, ddk: ByteArray, sdk: ByteArray, pdk: ByteArray) {
+        val prefs = context.getSharedPreferences("krypta_key_slots", Context.MODE_PRIVATE)
+        val currentGen = prefs.getInt("active_generation", 0)
+        val nextGen = currentGen + 1
         
-        return if (storedVerifier.contentEquals(currentVerifier)) currentVerifier else null
+        val mdkEnvelope = KeyManager.wrapKey(mdk, pdk)
+        val ddkEnvelope = KeyManager.wrapKey(ddk, pdk)
+        val sdkEnvelope = KeyManager.wrapKey(sdk, pdk)
+        val verifier = KeyManager.generateVerifier(mdk)
+
+        val bundle = JSONObject().apply {
+            put("version", 3)
+            put("generation", nextGen)
+            put("envelopes", JSONObject().apply {
+                put("mdk", mdkEnvelope)
+                put("ddk", ddkEnvelope)
+                put("sdk", sdkEnvelope)
+            })
+            put("verifier", verifier)
+        }
+
+        val slot = if (prefs.getString("active_slot", "a") == "a") "b" else "a"
+        val slotKey = "slot_$slot"
+
+        prefs.edit().apply {
+            putString(slotKey, bundle.toString())
+            putInt("active_generation", nextGen)
+            putString("active_slot", slot)
+            apply()
+        }
+    }
+
+    fun getActiveKeyBundle(context: Context): JSONObject? {
+        val prefs = context.getSharedPreferences("krypta_key_slots", Context.MODE_PRIVATE)
+        
+        fun parseAndValidateSlot(slotName: String): JSONObject? {
+            try {
+                val bundleStr = prefs.getString("slot_$slotName", null) ?: return null
+                val json = JSONObject(bundleStr)
+                
+                // Validate structural fields
+                if (!json.has("version") || !json.has("generation") || !json.has("envelopes") || !json.has("verifier")) {
+                    return null
+                }
+                
+                val envelopes = json.getJSONObject("envelopes")
+                if (!envelopes.has("mdk") || !envelopes.has("ddk") || !envelopes.has("sdk")) {
+                    return null
+                }
+
+                return json
+            } catch (e: Exception) {
+                return null
+            }
+        }
+
+        val bundleA = parseAndValidateSlot("a")
+        val bundleB = parseAndValidateSlot("b")
+
+        val genA = bundleA?.optInt("generation", -1) ?: -1
+        val genB = bundleB?.optInt("generation", -1) ?: -1
+
+        return when {
+            bundleA != null && bundleB != null -> if (genA >= genB) bundleA else bundleB
+            bundleA != null -> bundleA
+            bundleB != null -> bundleB
+            else -> null
+        }
+    }
+
+    /**
+     * Legacy PBKDF2 derivation (only for migration).
+     */
+    fun deriveLegacyKey(password: CharArray, salt: ByteArray, iterations: Int = ITERATION_COUNT): ByteArray {
+        val spec = PBEKeySpec(password, salt, iterations, KEY_LENGTH)
+        val factory = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
+        return factory.generateSecret(spec).encoded
+    }
+
+    /**
+     * Argon2id derivation for production.
+     */
+    fun derivePdk(password: String, salt: ByteArray): ByteArray {
+        val result = argon2Kt.hash(
+            mode = Argon2Mode.ARGON2_ID,
+            password = password.toByteArray(StandardCharsets.UTF_8),
+            salt = salt,
+            tCostInIterations = ARGON2_ITERATIONS,
+            mCostInKibibyte = ARGON2_MEMORY,
+            parallelism = ARGON2_PARALLELISM,
+            hashLengthInBytes = ARGON2_HASH_LENGTH
+        )
+        return result.rawHashAsByteArray()
+    }
+
+    fun generateSalt(): ByteArray {
+        val random = SecureRandom()
+        val salt = ByteArray(SALT_LENGTH)
+        random.nextBytes(salt)
+        return salt
     }
 
     // --- AES-GCM Encryption Logic ---
@@ -113,7 +238,11 @@ object SecurityUtils {
         cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
         val plaintext = cipher.doFinal(ciphertext)
         
-        return String(plaintext, StandardCharsets.UTF_8)
+        try {
+            return String(plaintext, StandardCharsets.UTF_8)
+        } finally {
+            plaintext.fill(0)
+        }
     }
 
     fun getEncryptStream(outputStream: OutputStream, key: ByteArray): OutputStream {
@@ -147,18 +276,5 @@ object SecurityUtils {
         cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
         
         return CipherInputStream(inputStream, cipher)
-    }
-
-    private fun generateSalt(): ByteArray {
-        val random = SecureRandom()
-        val salt = ByteArray(SALT_LENGTH)
-        random.nextBytes(salt)
-        return salt
-    }
-
-    private fun deriveKey(password: CharArray, salt: ByteArray, iterations: Int = ITERATION_COUNT): ByteArray {
-        val spec = PBEKeySpec(password, salt, iterations, KEY_LENGTH)
-        val factory = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-        return factory.generateSecret(spec).encoded
     }
 }

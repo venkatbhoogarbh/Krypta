@@ -5,7 +5,6 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 import java.util.UUID
 
 /**
@@ -48,7 +47,7 @@ class StorageManager(private val context: Context) {
      * @return The unique internal identifier (filename) if successful, null otherwise.
      */
     fun saveFile(uri: Uri, metadata: FileMetadata): String? {
-        val key = SessionManager.vaultKey ?: return null
+        val key = SessionManager.ddk ?: return null
         val internalId = UUID.randomUUID().toString() + if (metadata.extension.isNotEmpty()) ".${metadata.extension}" else ""
         val targetFile = File(documentsDir, internalId)
 
@@ -67,7 +66,7 @@ class StorageManager(private val context: Context) {
             } ?: throw Exception("Failed to open input stream")
             
             internalId
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             if (targetFile.exists()) targetFile.delete()
             null
         }
