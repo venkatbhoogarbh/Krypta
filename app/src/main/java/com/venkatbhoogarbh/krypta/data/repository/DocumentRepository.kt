@@ -16,19 +16,19 @@ class DocumentRepository(private val documentDao: DocumentDao) {
     }
 
     private fun encryptEntry(entry: DocumentEntry): DocumentEntry {
-        val key = SessionManager.vaultKey ?: return entry
+        val key = SessionManager.mdk ?: return entry
         return entry.copy(
             notes = entry.notes?.let { SecurityUtils.encrypt(it, key) }
         )
     }
 
     private fun decryptEntry(entry: DocumentEntry): DocumentEntry {
-        val key = SessionManager.vaultKey ?: return entry
+        val key = SessionManager.mdk ?: return entry
         return try {
             entry.copy(
                 notes = entry.notes?.let { SecurityUtils.decrypt(it, key) }
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             entry.copy(notes = "[Decryption Error]")
         }
     }

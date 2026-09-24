@@ -108,12 +108,12 @@ class DocumentViewModel(application: Application) : AndroidViewModel(application
                         try {
                             repository.delete(entry)
                             Result.success(Unit)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             // File deleted but DB failed - Inconsistency!
-                            Result.failure<Unit>(Exception("File deleted but database record remain. Please try again."))
+                            Result.failure(Exception("File deleted but database record remain. Please try again."))
                         }
                     } else {
-                        Result.failure<Unit>(Exception("Failed to delete the physical file."))
+                        Result.failure(Exception("Failed to delete the physical file."))
                     }
                 } catch (e: Exception) {
                     Result.failure(e)

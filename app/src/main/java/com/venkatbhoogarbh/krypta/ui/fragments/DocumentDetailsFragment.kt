@@ -105,7 +105,7 @@ class DocumentDetailsFragment : Fragment() {
     }
 
     private fun openDocument(entry: DocumentEntry) {
-        val key = SessionManager.vaultKey ?: return
+        val key = SessionManager.ddk ?: return
         try {
             val encryptedFile = storageManager.getFile(entry.internalIdentifier)
             if (!encryptedFile.exists()) {

@@ -9,6 +9,9 @@ interface DocumentDao {
     @Query("SELECT * FROM document_entries ORDER BY dateImported DESC")
     fun getAllDocuments(): Flow<List<DocumentEntry>>
 
+    @Query("SELECT * FROM document_entries")
+    suspend fun getAllDocumentsSync(): List<DocumentEntry>
+
     @Query("SELECT * FROM document_entries WHERE id = :id")
     suspend fun getDocumentById(id: Long): DocumentEntry?
 
