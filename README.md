@@ -1,73 +1,87 @@
 # Krypta
 
-**Krypta** is an offline-first Android password manager and encrypted document vault built with **Kotlin and Jetpack Compose**. It's designed around a simple principle: **your sensitive data should stay on your device and remain under your control.** Krypta provides separate vaults for passwords and documents, local encryption, secure authentication, password-generation tools, clipboard protection, and other security-focused features — without requiring a cloud account.
+**Krypta** is an offline-first Android password manager and encrypted document vault built with **Kotlin and Jetpack Compose**. The idea behind Krypta is pretty simple: **sensitive data should stay on your device and remain under your control.** Krypta lets you store passwords and documents locally, protect them with a master password, generate strong passwords, and reduce common risks such as accidentally leaving sensitive information in the clipboard. There is no cloud account or server required for its core functionality.
 
-> **Project Status:** Active development. Krypta is currently being developed and security-audited. It should not yet be considered a production-grade password manager.
+> **Project Status:** Active development. Krypta is currently being developed and security-audited. It is **not yet intended to be used as a production-grade password manager.**
 
 ---
 
 ## Features
-### Password Vault
-* Can store website/app credentials locally
+
+### 🔐 Password Vault
+
+The Password Vault is the main part of Krypta and lets you manage your saved credentials locally.
+
+* Store website and application credentials
 * Add, edit, and delete password entries
-* Password strength analysis
-* Secure password generator
-* Duplicate-password detection
-* Temporary password visibility
-* Automatic clipboard clearing
-* Search and manage saved credentials
+* Search saved credentials
+* Check password strength
+* Generate secure passwords
+* Detect duplicate passwords
+* Temporarily reveal hidden passwords
+* Automatically clear sensitive clipboard contents
 
-### Encrypted Document Vault
-* Import documents from Android storage
-* Store imported files inside private app storage
-* UUID-based internal file identifiers
-* Separate document-vault authentication
-* Room-backed document metadata
-* Private file access through Android's `FileProvider`
-* Atomic document-import handling
+### 📁 Encrypted Document Vault
 
-### Security
+Krypta also includes a separate vault for protecting personal documents.
+
+* Import documents using Android's storage picker
+* Store imported files inside the app's private storage
+* Use UUID-based internal file identifiers instead of relying on original file paths
+* Require separate authentication for the Document Vault
+* Store document metadata using Room
+* Share files securely through Android's `FileProvider`
+* Handle document imports atomically to avoid leaving incomplete files behind
+
+### 🛡️ Security
+
+Security is treated as a core part of Krypta rather than something added on later.
+
 * Master-password authentication
-* PBKDF2-HMAC-SHA256 key derivation
+* PBKDF2-HMAC-SHA256 password-based key derivation
 * 210,000 PBKDF2 iterations
 * Per-installation cryptographic salt
-* AES-GCM based encryption architecture
+* AES-GCM authenticated encryption
 * Two-slot cryptographic key-bundle design
-* Key-generation based recovery
-* Failed-authentication cooldown
-* Clipboard clearing
+* Generation-based key recovery
+* Authentication failure cooldown
+* Automatic clipboard clearing
 * Private application storage
 * No cloud synchronization by default
 
-### Additional Protection
-* Authentication failure tracking
+### 🔎 Additional Protection
+
+Krypta also includes several defensive measures around authentication and cryptographic state:
+
+* Failed-authentication tracking
 * Temporary session protection
-* Security-focused lifecycle handling
+* Lifecycle-aware security handling
 * Defensive handling of malformed key-storage states
 * Automated cryptographic migration tests
-* Instrumentation testing on Android Emulator
+* Android instrumentation testing
 
 ---
 
 ## Tech Stack
 
-| Technology                                   | Usage                         |
-| -------------------------------------------- | ----------------------------- |
-| **Kotlin**                                   | Primary programming language  |
-| **Jetpack Compose**                          | UI                            |
-| **Material 3**                               | Design system                 |
-| **Room**                                     | Local database                |
-| **Android Keystore / Android security APIs** | Cryptographic key handling    |
-| **PBKDF2-HMAC-SHA256**                       | Password-based key derivation |
-| **AES-GCM**                                  | Authenticated encryption      |
-| **FileProvider**                             | Secure file sharing           |
-| **Gradle**                                   | Build system                  |
-| **Android Studio**                           | Development                   |
+| Technology                           | Purpose                       |
+| ------------------------------------ | ----------------------------- |
+| **Kotlin**                           | Primary programming language  |
+| **Jetpack Compose**                  | UI                            |
+| **Material 3**                       | Design system                 |
+| **Room**                             | Local database                |
+| **Android Keystore / Security APIs** | Cryptographic key handling    |
+| **PBKDF2-HMAC-SHA256**               | Password-based key derivation |
+| **AES-GCM**                          | Authenticated encryption      |
+| **FileProvider**                     | Secure file sharing           |
+| **Gradle**                           | Build system                  |
+| **Android Studio**                   | Development                   |
 
 ---
 
 ## Architecture
-Krypta follows a layered Android architecture designed to keep UI, business logic, persistence, and security responsibilities separated.
+
+Krypta uses a layered architecture so that the UI, application logic, data storage, and security-related code can remain reasonably separated.
 
 ```text
 ┌─────────────────────────────┐
@@ -76,13 +90,13 @@ Krypta follows a layered Android architecture designed to keep UI, business logi
 └──────────────┬──────────────┘
                │
 ┌──────────────▼──────────────┐
-│        ViewModels           │
-│     State & UI Logic        │
+│          ViewModels         │
+│       State & UI Logic      │
 └──────────────┬──────────────┘
                │
 ┌──────────────▼──────────────┐
 │        Repositories         │
-│     Application Logic       │
+│      Application Logic      │
 └──────────────┬──────────────┘
                │
        ┌───────┴────────┐
@@ -95,9 +109,11 @@ Krypta follows a layered Android architecture designed to keep UI, business logi
 
         ┌──────────────────┐
         │ Security / Crypto│
-        │     Layer        │
+        │      Layer       │
         └──────────────────┘
 ```
+
+The security layer is kept separate from the normal application flow where possible, making security-sensitive code easier to test and review.
 
 ---
 
@@ -126,101 +142,31 @@ Krypta/
 
 ---
 
-## Getting Started
-
-### Requirements
-* Android Studio
-* JDK compatible with the project's Gradle/Android Gradle Plugin configuration
-* Android SDK
-* Android device or emulator running **Android 8.0 (API 26) or higher**
-
-### Clone the repository
-```bash
-git clone https://github.com/venkatbhoogarbh/Krypta.git
-cd Krypta
-```
-
-Open the project in **Android Studio**, allow Gradle to synchronize, and run the `app` configuration on an emulator or physical Android device.
-
----
-
-## Testing
-
-Krypta includes Android instrumentation tests for security-critical functionality.
-
-Run the connected Android tests with:
-
-```bash
-./gradlew connectedDebugAndroidTest
-```
-
-On Windows PowerShell:
-
-```powershell
-.\gradlew connectedDebugAndroidTest
-```
-
-Security-related tests currently cover areas such as cryptographic key-bundle recovery and migration behavior.
-
----
-
 ## Security Model
 
-Krypta is designed as an **offline-first** application. Sensitive data is intended to remain on the user's device rather than being automatically uploaded to a remote service. The authentication flow derives cryptographic material from the user's master password using **PBKDF2-HMAC-SHA256** with a per-installation salt. Krypta also uses a two-slot key-bundle design to improve resilience when cryptographic key state is being migrated or updated. Encryption operations use authenticated encryption through **AES-GCM**, helping provide both confidentiality and integrity.
+Krypta is designed around an **offline-first** approach. The core idea is that sensitive information should remain on the user's device instead of being automatically uploaded to a remote service.
+
+The authentication system derives cryptographic material from the user's master password using **PBKDF2-HMAC-SHA256** with a per-installation salt.
+
+Krypta also uses a **two-slot key-bundle design**. The goal is to make cryptographic key state more resilient during migrations or updates by keeping recoverable key generations rather than relying on a single piece of stored state.
+
+For encryption, Krypta uses **AES-GCM**, which provides authenticated encryption so that encrypted data can be protected against both unauthorized reading and undetected modification.
 
 ### Important
-Krypta is a personal/educational project undergoing active security review.
 
-**Do not use Krypta as the sole storage location for critical production credentials or irreplaceable documents.**
+Krypta is currently a **personal/educational project undergoing active development and security review**.
 
-Security-sensitive software benefits from independent review, extensive testing, threat modeling, and long-term maintenance.
-
----
-
-## Design
-
-Krypta uses a **dark-only Material 3 interface** designed around a secure command-center style. The application currently contains three primary areas:
-
-```text
-Passwords
-    │
-    ├── Saved credentials
-    ├── Password generator
-    └── Password security tools
-
-Documents
-    │
-    ├── Imported documents
-    └── Protected document storage
-
-Settings
-    │
-    └── Application & security configuration
-```
-
----
-
-## Screenshots
-
-> Screenshots will be added as the UI continues to be polished.
-
-
----
-
-## Goals
-
-Krypta is being developed with the following goals:
-* **Offline-first** — no cloud dependency for core functionality
-* **Privacy-focused** — sensitive information stays local
-* **Security-conscious** — cryptographic operations are treated as first-class functionality
-* **Simple UX** — security should not make everyday use unnecessarily complicated
-* **Maintainable architecture** — security and application logic should remain testable and separated
+**Do not use Krypta as the sole storage location for critical production credentials or irreplaceable documents. Security-sensitive software needs extensive testing, threat modeling, independent review, and long-term maintenance. Krypta is still working toward that level of maturity.**
 
 ---
 
 ## ⚠️ Disclaimer
 
-Krypta is an independently developed project and is currently under active development. While security has been a major design consideration, no software can be guaranteed to be completely secure. The project has **not undergone a formal independent security audit**. Use it for experimentation, learning, and development purposes at your own risk.
+Krypta is an independently developed project and is still under active development.
+
+Security has been a major consideration throughout the project, but **no software can be guaranteed to be completely secure**. Krypta has **not undergone a formal independent security audit**.
+
+For now, Krypta is best treated as a learning, experimentation, and development project rather than a replacement for an established production password manager.
 
 ---
 
@@ -236,4 +182,4 @@ GitHub: **[@venkatbhoogarbh](https://github.com/venkatbhoogarbh)**
 
 ## License
 
-License information will be added to the repository as the project approaches its public-release stage.
+License information will be added to the repository as Krypta approaches its public-release stage.
